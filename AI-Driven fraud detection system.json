@@ -1,0 +1,298 @@
+{
+  "name": "AI-Driven fraud detection system",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1020,
+        60
+      ],
+      "id": "b0de0637-80f3-46d2-82f6-9f65cb95d699",
+      "name": "Telegram Trigger",
+      "webhookId": "f7a62bfb-fc57-41d4-a648-ad5311365f08",
+      "credentials": {
+        "telegramApi": {
+          "id": "zmKbTHHEVowQkCCo",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "042f819d-a127-43e1-8c7f-5cb871196398",
+              "name": "text",
+              "value": "={{$json[\"message\"][\"text\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "ff80dc69-c1a3-4288-9ab0-13f27d4564f0",
+              "name": "chatId",
+              "value": "={{$json[\"message\"][\"chat\"][\"id\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -800,
+        60
+      ],
+      "id": "c76bd775-38de-4eaf-ac09-be8fdc0dc5c3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a fraud detection expert.  \nClassify the following message as either:  \n- Fraud  \n- Legit  \n\nONLY reply with one word: either \"Fraud\" or \"Legit\". No explanation.\n\nMessage: \"{{ $json[\"text\"] }}\"",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        60
+      ],
+      "id": "7f3c179e-0afe-459b-b2f9-4ff4559b2fc9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        280
+      ],
+      "id": "15e40903-5ac4-4682-83e9-3fd7e521fb76",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FhgxFEmXTyBJvzFA",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "=⚠️ Alert! This message seems like *fraud*:  \"{{ $json[\"text\"] }}\"  🚫 Please avoid sharing personal details or making payments.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        -100
+      ],
+      "id": "24f24990-2b7e-436f-aa21-30f8cb9eaa0c",
+      "name": "Send a text message",
+      "webhookId": "0cc96b8e-a0ae-42fb-8f34-b501dacaf275",
+      "credentials": {
+        "telegramApi": {
+          "id": "8m56h1JR5sBkrpvi",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=✅ This message looks safe:  \"{{ $json[\"text\"] }}\"  AI classified it as *Legit*.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        100
+      ],
+      "id": "fba6b621-0076-4578-8d15-69574aa1e54c",
+      "name": "Send a text message1",
+      "webhookId": "55a7816a-592e-4a72-8208-5740df205e10",
+      "credentials": {
+        "telegramApi": {
+          "id": "9yHoyBGCTzk8BA2s",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $json.output.toLowerCase();\n\nif (output.includes('fraud') || output.includes('scam')) {\n  return [{ alert: 'fraud' }];\n} else {\n  return [{ alert: 'Legit' }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        60
+      ],
+      "id": "946a8611-66f4-4d27-8de1-5270cf4382c5",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.alert }}",
+                    "rightValue": "fraud",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "014f5a25-91ae-4a6a-8667-d216cce4d7d6"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "56cb0e6f-2ee3-4385-ab69-75602c1ee7d4",
+                    "leftValue": "={{ $json.alert }}",
+                    "rightValue": "Legit",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -80,
+        20
+      ],
+      "id": "bcabb0a9-5ac9-409a-ace4-2f3c67a9f83d",
+      "name": "Switch"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0e41c6b9-a05d-4f98-806a-f89ab09937cf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e9f33cc4a21d2d9b6b3c98a1696f7ad83512fdb1d778751bfff878d858ec4fdf"
+  },
+  "id": "fgEXo7UqztMUmtt1",
+  "tags": []
+}
